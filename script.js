@@ -159,8 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('pointerdown', resume);
   });
 
-  // Begin loading list of videos from the directory index
-  loadVideoListFromDir().catch(() => {/* ignore, will fallback to initial src only */});
+  // Begin loading list of videos from a static manifest (works on static hosts)
+  loadVideoManifest()
+    .catch(() => loadVideoListFromDir())
+    .catch(() => { console.warn('Video list not found; using initial source only.'); });
 
   // Initial banner color
   bannerRandomizeColor();
@@ -294,6 +296,32 @@ function getMinSpawnIntervalMs() {
 
 function canSpawnNow() {
   return !bubblesPaused && (Date.now() - lastBubbleSpawnAt >= getMinSpawnIntervalMs());
+}
+
+// ---- Load videos from manifest.json (static hosting friendly) ----
+function loadVideoManifest() {
+  return fetch('videos/manifest.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('manifest not found')))
+    .then(list => {
+      if (!Array.isArray(list)) throw new Error('manifest invalid');
+      const cleaned = list.map(item => {
+        const v = (typeof item === 'string') ? item : (item && item.src) ? item.src : '';
+        if (!v) return '';
+        if (/^https?:\/\//i.test(v)) return v;
+        if (v.startsWith('videos/')) return v;
+        return `videos/${v}`;
+      }).filter(Boolean);
+      // Deduplicate
+      const seen = new Set();
+      videoList = cleaned.filter(f => {
+        const key = f.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      videoListLoaded = videoList.length > 0;
+      return videoList;
+    });
 }
 
 // ---- Discover videos by scraping the directory index ----
