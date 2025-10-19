@@ -160,9 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Begin loading list of videos from a static manifest (works on static hosts)
-  loadVideoManifest()
-    .catch(() => loadVideoListFromDir())
-    .catch(() => { console.warn('Video list not found; using initial source only.'); });
+  loadVideoManifest().catch(() => {
+    console.warn('Video manifest not found; falling back to initial source only.');
+    seedVideosFromInitialSource();
+  });
 
   // Initial banner color
   bannerRandomizeColor();
@@ -298,6 +299,15 @@ function canSpawnNow() {
   return !bubblesPaused && (Date.now() - lastBubbleSpawnAt >= getMinSpawnIntervalMs());
 }
 
+function seedVideosFromInitialSource() {
+  const s = document.getElementById('bg-source');
+  const src = s && s.getAttribute('src');
+  if (src) {
+    videoList = [src];
+    videoListLoaded = true;
+  }
+}
+
 // ---- Load videos from manifest.json (static hosting friendly) ----
 function loadVideoManifest() {
   return fetch('videos/manifest.json', { cache: 'no-store' })
@@ -324,40 +334,7 @@ function loadVideoManifest() {
     });
 }
 
-// ---- Discover videos by scraping the directory index ----
-function loadVideoListFromDir() {
-  return fetch('videos/', { cache: 'no-store' })
-    .then(r => r.ok ? r.text() : Promise.reject(new Error('dir index failed')))
-    .then(html => {
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const anchors = Array.from(doc.querySelectorAll('a[href]'));
-      const files = anchors
-        .map(a => (a.getAttribute('href') || '').trim())
-        .filter(href => href && !href.includes('..'))
-        .filter(href => /\.(mp4|webm|ogv)(?:\?.*)?$/i.test(href))
-        .map(href => {
-          // Normalize to 'videos/filename.ext'
-          if (href.startsWith('http')) return href; // absolute
-          if (href.startsWith('/')) return `videos${href}`.replace(/\\/g,'/');
-          if (href.startsWith('videos/')) return href;
-          return `videos/${href}`;
-        });
-      // Deduplicate
-      const seen = new Set();
-      videoList = files.filter(f => {
-        const key = f.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      videoListLoaded = true;
-      return videoList;
-    })
-    .catch(err => {
-      console.warn('Video list discovery failed; using initial source only.', err);
-      videoListLoaded = false;
-    });
-}
+// Directory scraping removed for static hosting (no index on Pages/Vercel)
 
 // ---- CLICK! banner color control ----
 function bannerRandomizeColor() {
