@@ -37,44 +37,44 @@
   <script src="messages.js"></script>
   <script src="script.js"></script>
 
-  <!-- Firebase live counter (fill in your config to enable) -->
+  <!-- Firebase live counter (configured) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-analytics.js";
     import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyDNfJF7pHKeXaQ3dKBYZvDYfk2mvmXCtuk",
+      authDomain: "looproomcounter.firebaseapp.com",
+      databaseURL: "https://looproomcounter-default-rtdb.firebaseio.com",
+      projectId: "looproomcounter",
+      storageBucket: "looproomcounter.firebasestorage.app",
+      messagingSenderId: "127016928679",
+      appId: "1:127016928679:web:e0284e8957c25f94e96282",
+      measurementId: "G-43CMFG4RZN"
     };
 
-    const hasPlaceholders = Object.values(firebaseConfig).some(v => typeof v === 'string' && v.includes('YOUR_'));
-    if (!hasPlaceholders) {
-      try {
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const clicksRef = ref(db, 'clicks');
+    try {
+      const app = initializeApp(firebaseConfig);
+      // Analytics is optional; safe to try-catch to avoid local issues
+      try { getAnalytics(app); } catch (e) { /* ignore on http or unsupported */ }
 
-        const countEl = document.getElementById('click-count');
-        onValue(clicksRef, (snap) => {
-          const val = snap.val() || 0;
-          countEl.textContent = val;
-          countEl.classList.add('flicker');
-          setTimeout(() => countEl.classList.remove('flicker'), 200);
-        });
+      const db = getDatabase(app);
+      const clicksRef = ref(db, 'clicks');
 
-        document.addEventListener('click', () => {
-          runTransaction(clicksRef, (n) => (n || 0) + 1);
-        });
-      } catch (e) {
-        console.warn('Counter disabled (Firebase init failed):', e);
-      }
-    } else {
-      console.info('Counter disabled: add Firebase config in index.html to enable.');
+      const countEl = document.getElementById('click-count');
+      onValue(clicksRef, (snap) => {
+        const val = snap.val() || 0;
+        countEl.textContent = val;
+        countEl.classList.add('flicker');
+        setTimeout(() => countEl.classList.remove('flicker'), 200);
+      });
+
+      document.addEventListener('click', () => {
+        runTransaction(clicksRef, (n) => (n || 0) + 1);
+      });
+    } catch (e) {
+      console.warn('Counter disabled (Firebase init failed):', e);
     }
   </script>
 </body>
