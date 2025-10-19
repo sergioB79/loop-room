@@ -1,0 +1,256 @@
+PROJECT BLUEPRINT — “LOOP_ROOM: The System Speaks”
+Concept Summary
+
+A minimalist web installation inspired by Han Hoogerbrugge, using looping dancer videos with sound and drifting chat bubble icons.
+Each bubble represents the illusion of connection — when clicked, one expands, glitches, reveals a cryptic phrase, and fades.
+The sound continues, the dancers loop, and the system resets — forever.
+
+🎨 VISUAL SYSTEM
+Layer	Description
+Background	Looping video of dancing silhouettes, each with distinct sound.
+Monosymbol (Chat Bubble)	Floating speech bubbles (1–5). Vary slightly in size and position. Minimalist black outlines or white with soft opacity.
+Interaction	Clicking a bubble makes it expand, display a short phrase, flicker with glitch animation, then pop away after ~5 seconds.
+Mood	Digital purgatory between speech and silence — the illusion of conversation in an algorithmic void.
+🧩 STRUCTURE
+Folders
+/videos/
+   tango.mp4
+   mambo.mp4
+   salsa.mp4
+   fandango.mp4
+   afrobeat.mp4
+   shuffle.mp4
+   experimental.mp4
+
+/video_masks/
+   tango_mask.png
+   mambo_mask.png
+   ...
+
+/icons/
+   chatbubble.svg   ← Monosymbol
+/fonts/
+   minimalist.ttf
+index.html
+style.css
+script.js
+messages.js
+
+🎧 SOUND
+
+Each video includes sound — normalize volumes externally for smooth transitions.
+No music overlay; the loops’ original sound acts as ambient texture.
+Optional: add a faint digital pop when a bubble expands.
+
+⚡ GLITCH FX (on video change or bubble pop)
+
+You already have the flicker layer:
+
+<div id="glitch-layer"></div>
+
+
+Use the same CSS and JS trigger system as before.
+Now you’ll also call triggerGlitch() when a bubble pops, not just on video change.
+
+💬 CHAT BUBBLE SYSTEM
+Behavior Flow
+
+Spawn Phase:
+Randomly 1–5 bubbles appear, floating and pulsing slightly.
+Each uses the same SVG chat bubble (scaled + opacity randomized).
+
+Hover:
+Cursor changes to pointer; bubble vibrates slightly.
+
+Click:
+
+Bubble expands (centered or from click position).
+
+Triggers glitch animation.
+
+Displays random short phrase.
+
+After 5s → fades out (“pops”).
+
+Respawns a new one after delay.
+
+Example Messages
+
+From messages.js:
+
+const messages = [
+  "Still typing...",
+  "You never replied.",
+  "Seen 0:00",
+  "This is not a chat.",
+  "I'm still here.",
+  "Silence read you first.",
+  "Everything changes. Nothing changes.",
+  "Loop detected.",
+  "Unread by design."
+];
+
+💻 CODE OUTLINE
+index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loop_Room</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <video id="bg-video" autoplay loop playsinline>
+    <source src="videos/tango.mp4" type="video/mp4">
+  </video>
+
+  <div id="glitch-layer"></div>
+  <div id="bubble-layer"></div>
+
+  <script src="messages.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
+
+style.css
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: black;
+  overflow: hidden;
+}
+
+video {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transition: opacity 0.8s ease;
+}
+
+#glitch-layer {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.2) 0px,
+    rgba(0,0,0,0.1) 2px,
+    rgba(255,255,255,0.2) 4px
+  );
+  mix-blend-mode: difference;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+#bubble-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  width: 60px;
+  height: 45px;
+  background: url('icons/chatbubble.svg') no-repeat center/contain;
+  opacity: 0.8;
+  animation: drift 10s infinite ease-in-out alternate;
+  pointer-events: all;
+  cursor: pointer;
+  transition: transform 0.3s ease, opacity 0.4s ease;
+}
+
+.bubble:hover {
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+.bubble.expanded {
+  background: rgba(255,255,255,0.9);
+  color: #000;
+  font-family: monospace;
+  font-size: 18px;
+  border-radius: 12px;
+  text-align: center;
+  padding: 20px;
+  width: 50vw;
+  height: auto;
+  left: 25vw !important;
+  top: 30vh !important;
+  background-image: none;
+  animation: glitchPop 0.5s ease;
+  pointer-events: none;
+}
+
+@keyframes drift {
+  0% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(10px,-10px) scale(1.05); }
+  100% { transform: translate(0,0) scale(1); }
+}
+
+@keyframes glitchPop {
+  0%,100% { transform: scale(1); opacity: 1; }
+  20%,60% { transform: scale(1.1) skewX(3deg); }
+  40% { transform: scale(0.95) skewX(-3deg); }
+}
+
+script.js
+function triggerGlitch() {
+  const g = document.getElementById('glitch-layer');
+  g.style.animation = 'glitch 0.5s';
+  g.onanimationend = () => g.style.animation = '';
+}
+
+function spawnBubble() {
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.style.left = `${Math.random() * 80 + 10}%`;
+  bubble.style.top = `${Math.random() * 70 + 15}%`;
+  document.getElementById('bubble-layer').appendChild(bubble);
+
+  bubble.addEventListener('click', () => {
+    bubble.classList.add('expanded');
+    bubble.textContent = messages[Math.floor(Math.random() * messages.length)];
+    triggerGlitch();
+    setTimeout(() => bubble.remove(), 5000);
+    setTimeout(() => spawnBubble(), 7000);
+  });
+
+  setTimeout(() => bubble.remove(), 15000);
+}
+
+function spawnRandomBubbles() {
+  const count = Math.floor(Math.random() * 5) + 1;
+  for (let i = 0; i < count; i++) spawnBubble();
+}
+
+spawnRandomBubbles();
+
+🧠 SYMBOL PHILOSOPHY — “Chat Bubble as Parasite”
+
+The chat bubble used to promise conversation.
+Now it’s just a hollow loop — the perfect symbol for algorithmic empathy.
+You click to connect; you trigger a glitch.
+The system replies only with fragments of itself.
+
+Optional detail:
+Sometimes a bubble could appear already expanded, showing “...” or a blank space — as if the system is “typing to itself.”
+
+🪄 NEXT STEPS
+
+✅ Prepare BW masks if you want silhouette-based clicks.
+
+✅ Normalize video sound levels.
+
+✅ Replace placeholder SVG with your minimalist chat bubble design (simple line, no text tail if you want extra abstraction).
+
+✅ Test crossfades and glitch overlays with real videos.
+
+🔜 Add idle auto-spawn: bubbles appear on their own if user stops clicking.
+
+🔜 Optional “loop counter” hidden metric: tracks how many loops user has triggered (for future meta use).

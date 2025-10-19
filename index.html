@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loop_Room</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="Minimalist looping video with drifting chat bubbles and glitch.">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+</head>
+<body>
+  <video id="bg-video" autoplay loop playsinline muted>
+    <source id="bg-source" src="videos/tango.mp4" type="video/mp4">
+  </video>
+
+  <div id="glitch-layer"></div>
+  <div id="bubble-layer"></div>
+
+  <!-- Top-left banners -->
+  <div id="banner-wrap" aria-hidden="true">
+    <div id="title-banner">LOOP ROOM</div>
+    <div id="click-banner">CLICK!</div>
+  </div>
+
+  <!-- Global Click Counter -->
+  <div id="counter">
+    <div id="click-count">0</div>
+    <div id="caption">nothing counts but we count clicks</div>
+  </div>
+
+  <!-- Signature -->
+  <div id="signature">by <a href="https://sergiob79.github.io/Noctarion_page/#" target="_blank" rel="noopener noreferrer">Noctarion</a></div>
+
+  <!-- Footer trigger: disclaimer -->
+  <div id="disclaimer-link" role="button" aria-controls="disclaimer-bubble" aria-expanded="false">disclaimer</div>
+
+  <script src="messages.js"></script>
+  <script src="script.js"></script>
+
+  <!-- Firebase live counter (fill in your config to enable) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+    import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const hasPlaceholders = Object.values(firebaseConfig).some(v => typeof v === 'string' && v.includes('YOUR_'));
+    if (!hasPlaceholders) {
+      try {
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const clicksRef = ref(db, 'clicks');
+
+        const countEl = document.getElementById('click-count');
+        onValue(clicksRef, (snap) => {
+          const val = snap.val() || 0;
+          countEl.textContent = val;
+          countEl.classList.add('flicker');
+          setTimeout(() => countEl.classList.remove('flicker'), 200);
+        });
+
+        document.addEventListener('click', () => {
+          runTransaction(clicksRef, (n) => (n || 0) + 1);
+        });
+      } catch (e) {
+        console.warn('Counter disabled (Firebase init failed):', e);
+      }
+    } else {
+      console.info('Counter disabled: add Firebase config in index.html to enable.');
+    }
+  </script>
+</body>
+</html>
